@@ -5,620 +5,222 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>Jumping Ball Runner</title>
 <style>
-  :root{
-    --bg1:#7bd4ff; --bg2:#ffe8f7; --fg:#111;
-    --ui:#ffffffcc; --accent:#ff3e9e; --accent2:#ffc22e; --ok:#35d07f; --warn:#ff6b6b;
-  }
-  html,body{height:100%;margin:0;background:#111;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:#111;overflow:hidden}
-  #wrap{position:fixed;inset:0;display:grid;place-items:center}
-  #gameCanvas{width:100vw;height:100vh;display:block;background:linear-gradient(180deg,var(--bg1),var(--bg2));}
-  #hud{
-    position:fixed;left:0;top:0;right:0;display:flex;justify-content:space-between;
-    padding:10px 14px; pointer-events:none; font-weight:700; letter-spacing:.2px;
-    mix-blend-mode:normal; color:#222;
-  }
-  .pill{
-    background:var(--ui); backdrop-filter:saturate(140%) blur(4px);
-    border-radius:999px; padding:6px 12px; display:inline-flex; align-items:center; gap:8px;
-    box-shadow:0 3px 14px #0002; pointer-events:auto; user-select:none;
-  }
-  #leftHUD, #rightHUD{display:flex; gap:8px; align-items:center}
-  #btnSound, #btnPause{cursor:pointer}
-  #title{
-    position:fixed; top:12px; left:50%; transform:translateX(-50%);
-    background:var(--ui); padding:6px 14px; border-radius:999px; font-weight:900; letter-spacing:.5px;
-    box-shadow:0 3px 14px #0002; pointer-events:none;
-  }
-  #overlay{
-    position:fixed; inset:0; display:grid; place-items:center; background:#00000060;
-    opacity:1; transition:opacity .25s ease;
-  }
-  #overlay.hidden{opacity:0; pointer-events:none}
-  .card{
-    width:min(90vw,560px); background:linear-gradient(180deg,#fff,#fff9);
-    padding:18px; border-radius:16px; box-shadow:0 10px 40px #0008; text-align:center;
-  }
-  h1{margin:.2rem 0 .6rem; font-size:clamp(22px,4vw,32px)}
-  p{margin:.25rem 0 .75rem; color:#333}
-  .row{display:flex; gap:8px; justify-content:center; flex-wrap:wrap}
-  button{
-    appearance:none; border:0; border-radius:12px; padding:10px 14px; font-weight:800; cursor:pointer;
-    background:linear-gradient(180deg,var(--accent),#ff057e); color:#fff; box-shadow:0 6px 18px #ff3e9e55;
-  }
-  button.secondary{background:linear-gradient(180deg,#ddd,#bbb); color:#111; box-shadow:0 6px 18px #0002}
-  .mini{font-size:12px; opacity:.75; margin-top:.5rem}
-  /* Accessibility helpers */
-  @media (prefers-reduced-motion: reduce){
-    *{animation: none !important; transition: none !important}
-  }
+:root {
+  --bg1:#7bd4ff;
+  --bg2:#ffe8f7;
+  --ui:rgba(255,255,255,0.7);
+  --accent:#ff3e9e;
+  --warn:#ff6b6b;
+}
+html,body{height:100%;margin:0;background:#111;font-family:Arial, sans-serif;color:#111;overflow:hidden;}
+#wrap{position:fixed;inset:0;display:grid;place-items:center;}
+#gameCanvas{width:100vw;height:100vh;display:block;background:linear-gradient(180deg,var(--bg1),var(--bg2));}
+#hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:10px 14px;font-weight:700;pointer-events:none;color:#222;}
+.pill{background:var(--ui);backdrop-filter:blur(4px);border-radius:999px;padding:6px 12px;margin-right:8px;}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);transition:opacity .3s;}
+#overlay.hidden{opacity:0;pointer-events:none;}
+.card{background:linear-gradient(180deg,#fff,#fff9);padding:18px;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.5);text-align:center;}
+button{appearance:none;background:linear-gradient(180deg,var(--accent),#ff057e);color:white;border:none;padding:10px 14px;border-radius:12px;font-weight:bold;cursor:pointer;margin:4px;}
+button.secondary{background:#ddd;color:#111;}
 </style>
 </head>
 <body>
-  <div id="wrap">
-    <canvas id="gameCanvas" aria-label="Jumping Ball Runner (endless runner)"></canvas>
-    <div id="hud" aria-live="polite">
-      <div id="leftHUD">
-        <div class="pill">Score: <span id="score">0</span></div>
-        <div class="pill">High: <span id="best">0</span></div>
-      </div>
-      <div id="rightHUD">
-        <div id="speedPill" class="pill">Speed: <span id="spd">1.0x</span></div>
-        <div id="btnSound" class="pill" role="button" aria-label="Toggle sound" title="Toggle sound">🔊 Sound</div>
-        <div id="btnPause" class="pill" role="button" aria-label="Pause/Resume" title="Pause/Resume">⏸ Pause</div>
-      </div>
-    </div>
-    <div id="title">🎈 JUMPING&nbsp;BALL&nbsp;RUNNER</div>
-
-    <div id="overlay">
-      <div class="card" id="menuCard">
-        <h1>Jumping Ball Runner</h1>
-        <p>Goal: jump over obstacles and survive as long as possible. Speed ramps up the longer you last.</p>
-        <p><strong>Controls:</strong> Tap / Click / Press <kbd>Space</kbd>, <kbd>W</kbd>, or <kbd>↑</kbd> to jump. Press <kbd>P</kbd> to pause.</p>
-        <div class="row">
-          <button id="btnStart">▶ Start</button>
-          <button id="btnHow" class="secondary">How to Play</button>
-        </div>
-        <p class="mini">Funny sounds included. Best score is saved on your device.</p>
-      </div>
+<div id="wrap">
+  <canvas id="gameCanvas"></canvas>
+  <div id="hud">
+    <div id="scorePill" class="pill">Score: <span id="score">0.0</span></div>
+    <div id="highPill" class="pill">High: <span id="high">0.0</span></div>
+    <div id="speedPill" class="pill">Speed: <span id="speed">1.0x</span></div>
+  </div>
+  <div id="overlay">
+    <div class="card" id="menuCard">
+      <h1>Jumping Ball Runner</h1>
+      <p>Dodge the blocks and last as long as you can.</p>
+      <button id="startBtn">Start</button>
+      <button id="howBtn" class="secondary">How to Play</button>
     </div>
   </div>
-
+</div>
 <script>
 (function(){
-  // ----- Canvas & DPI handling -----
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  let DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+ const canvas = document.getElementById('gameCanvas');
+ const ctx = canvas.getContext('2d');
+ let DPR = window.devicePixelRatio || 1;
+ function resize(){
+   DPR = window.devicePixelRatio || 1;
+   canvas.width = Math.floor(window.innerWidth*DPR);
+   canvas.height = Math.floor(window.innerHeight*DPR);
+ }
+ window.addEventListener('resize', resize);
+ resize();
 
-  function resize(){
-    DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    canvas.width = Math.floor(window.innerWidth * DPR);
-    canvas.height = Math.floor(window.innerHeight * DPR);
-  }
-  window.addEventListener('resize', resize, {passive:true});
-  resize();
+ // UI
+ const scoreEl = document.getElementById('score');
+ const highEl = document.getElementById('high');
+ const speedEl = document.getElementById('speed');
+ const overlay = document.getElementById('overlay');
+ const startBtn = document.getElementById('startBtn');
+ const howBtn = document.getElementById('howBtn');
+ let best = parseFloat(localStorage.getItem('jbr_best') || 0);
+ highEl.textContent = best.toFixed(1);
 
-  // ----- UI elements -----
-  const elScore = document.getElementById('score');
-  const elBest  = document.getElementById('best');
-  const elSpd   = document.getElementById('spd');
-  const overlay = document.getElementById('overlay');
-  const btnStart= document.getElementById('btnStart');
-  const btnHow  = document.getElementById('btnHow');
-  const btnPause= document.getElementById('btnPause');
-  const btnSound= document.getElementById('btnSound');
+ // game state
+ let running=false, gameOver=false, paused=false;
+ let score=0, speed=400, speedMul=1;
+ let lastTime=0;
+ let gravity=2000, jumpVel=-800;
+ const player = {x:100,y:0,vy:0,r:25,onGround:false};
+ const obstacles=[];
+ let spawnTimer=0;
 
-  // ----- Persistent high score -----
-  const HS_KEY = 'jbr_highscore_v1';
-  let best = Number(localStorage.getItem(HS_KEY) || 0);
-  elBest.textContent = best;
+ function resetPlayer(){
+   player.r = Math.floor(canvas.height*0.03);
+   player.x = Math.floor(canvas.width*0.2);
+   player.y = canvas.height*0.8 - player.r;
+   player.vy = 0; player.onGround=true;
+ }
 
-  // ----- Audio (procedural "funny" sounds) -----
-  let audioEnabled = true;
-  let AC, master, now;
-  function ensureAudio(){
-    if (AC) return;
-    AC = new (window.AudioContext || window.webkitAudioContext)();
-    master = AC.createGain();
-    master.gain.value = 0.25;
-    master.connect(AC.destination);
-  }
-  function beep({type='sine', start=440, end=660, time=0.2, vol=0.5, curve='exp'}={}){
-    if (!audioEnabled) return;
-    ensureAudio();
-    const o = AC.createOscillator();
-    const g = AC.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(start, AC.currentTime);
-    if (curve==='exp'){
-      o.frequency.exponentialRampToValueAtTime(Math.max(1,end), AC.currentTime + time);
-    }else{
-      o.frequency.linearRampToValueAtTime(end, AC.currentTime + time);
-    }
-    g.gain.value = vol;
-    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + time);
-    o.connect(g).connect(master);
-    o.start();
-    o.stop(AC.currentTime + time + 0.01);
-  }
-  function noise({time=0.15, vol=0.4}={}){
-    if (!audioEnabled) return;
-    ensureAudio();
-    const buffer = AC.createBuffer(1, AC.sampleRate * time, AC.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i=0;i<data.length;i++){
-      data[i] = (Math.random()*2 - 1) * (1 - i/data.length); // quick fade
-    }
-    const src = AC.createBufferSource();
-    const g = AC.createGain();
-    src.buffer = buffer;
-    g.gain.value = vol;
-    src.connect(g).connect(master);
-    src.start();
-  }
-  const SFX = {
-    jump(){ beep({type:'sine', start:280, end:720, time:0.18, vol:0.6}); },
-    land(){ noise({time:0.08, vol:0.35}); },
-    milestone(){ beep({type:'triangle', start:680, end:960, time:0.15, vol:0.5}); },
-    hit(){
-      // cartoony "wah-wah"
-      beep({type:'sawtooth', start:520, end:140, time:0.28, vol:0.6, curve:'lin'});
-      setTimeout(()=>noise({time:0.12, vol:0.25}), 90);
-    },
-    start(){ beep({type:'square', start:300, end:800, time:0.12, vol:0.6}); }
-  };
+ function spawnObstacle(){
+   const w = (40 + Math.random()*60)*DPR;
+   const h = (40 + Math.random()*100)*DPR;
+   const y = canvas.height - h;
+   const x = canvas.width + w;
+   obstacles.push({x,y,w,h});
+ }
 
-  btnSound.addEventListener('click', ()=>{
-    audioEnabled = !audioEnabled;
-    if (audioEnabled) { ensureAudio(); SFX.start(); }
-    btnSound.textContent = (audioEnabled ? '🔊 Sound' : '🔇 Muted');
-  });
+ function update(dt){
+   speedMul += dt*0.04;
+   const vel = speed * speedMul;
+   speedEl.textContent = speedMul.toFixed(2)+'x';
+   // player physics
+   player.vy += gravity*dt;
+   player.y += player.vy*dt;
+   const floorY = canvas.height*0.8;
+   if(player.y + player.r >= floorY){
+     player.y = floorY - player.r;
+     player.vy = 0;
+     player.onGround=true;
+   }
+   // spawn obstacles
+   spawnTimer -= dt;
+   if(spawnTimer <=0){
+     spawnObstacle();
+     spawnTimer = 1 + Math.random();
+   }
+   // move obstacles
+   for(let i=0;i<obstacles.length;i++){
+     const o = obstacles[i];
+     o.x -= vel*dt;
+   }
+   // remove off-screen
+   while(obstacles.length && obstacles[0].x + obstacles[0].w < 0){
+     obstacles.shift();
+   }
+   // collision
+   for(const o of obstacles){
+     const cx = player.x*DPR;
+     const cy = player.y*DPR;
+     const r = player.r*DPR;
+     const rx = o.x, ry = o.y, rw = o.w, rh = o.h;
+     const nearestX = Math.max(rx, Math.min(cx, rx+rw));
+     const nearestY = Math.max(ry, Math.min(cy, ry+rh));
+     const dx = cx - nearestX;
+     const dy = cy - nearestY;
+     if(dx*dx + dy*dy <= r*r){
+       endGame();
+       return;
+     }
+   }
+   // score
+   score += dt;
+   scoreEl.textContent = score.toFixed(1);
+ }
 
-  // ----- Game state -----
-  let running = false, paused = false, gameOver = false;
-  let tPrev = 0, acc = 0;
-  let score = 0, speed = 320, speedMul = 1, spawnT = 0, milestoneAt = 5;
-  let camShakeT = 0;
+ function draw(){
+   ctx.save();
+   // clear
+   ctx.fillStyle= '#fdf5e6';
+   ctx.fillRect(0,0,canvas.width,canvas.height);
+   // ground
+   ctx.fillStyle='#f0e4d7';
+   ctx.fillRect(0,canvas.height*0.8,canvas.width,canvas.height*0.2);
+   // obstacles
+   ctx.fillStyle='#4b7bec';
+   ctx.strokeStyle='#3867d6';
+   for(const o of obstacles){
+     ctx.fillRect(o.x, o.y, o.w, o.h);
+     ctx.strokeRect(o.x, o.y, o.w, o.h);
+   }
+   // player
+   ctx.fillStyle='#eb3b5a';
+   ctx.beginPath();
+   ctx.arc(player.x*DPR, player.y*DPR, player.r*DPR, 0, Math.PI*2);
+   ctx.fill();
+   ctx.restore();
+ }
 
-  // World metrics
-  function H(){ return canvas.height; }
-  function W(){ return canvas.width; }
-  const world = {
-    groundY(){ return Math.floor(H()*0.82); },
-    gravity(){ return 3400 * (H()/900); },
-    jumpV(){ return 1200 * (H()/900); },
-    baseSpeed(){ return 320 * (W()/1600); }
-  };
+ function loop(timestamp){
+   if(!running) return;
+   const dt = (timestamp - lastTime)/1000;
+   lastTime = timestamp;
+   update(dt);
+   draw();
+   requestAnimationFrame(loop);
+ }
 
-  // ----- Player (cartoon ball) -----
-  const player = {
-    x: 0, y: 0, r: 26, vy: 0, onGround: false, squish: 0, faceBlinkT: 0,
-    reset(){
-      this.r = Math.floor(H()/34);
-      this.x = Math.floor(W()*0.22);
-      this.y = world.groundY() - this.r;
-      this.vy = 0; this.onGround = true; this.squish = 0; this.faceBlinkT = 0;
-    },
-    jump(){
-      if (!running || gameOver) return;
-      if (this.onGround){
-        this.vy = -world.jumpV();
-        this.onGround = false;
-        this.squish = -0.18;
-        SFX.jump();
-      }
-    },
-    update(dt){
-      this.vy += world.gravity()*dt;
-      this.y += this.vy*dt;
-      const gy = world.groundY() - this.r;
-      if (this.y >= gy){
-        if (!this.onGround){ SFX.land(); this.squish = 0.18; }
-        this.y = gy; this.vy = 0; this.onGround = true;
-      }
-      // squish decay
-      this.squish *= Math.pow(0.001, dt); // quick ease to 0
-      this.faceBlinkT += dt;
-    },
-    draw(){
-      const px = this.x, py = this.y;
-      const sx = 1 + this.squish, sy = 1 - this.squish;
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.scale(sx, sy);
+ function startGame(){
+   overlay.classList.add('hidden');
+   running=true;
+   gameOver=false;
+   score=0;
+   speedMul=1;
+   obstacles.length=0;
+   spawnTimer=1;
+   resetPlayer();
+   lastTime=performance.now();
+   requestAnimationFrame(loop);
+ }
 
-      // body (shiny candy ball)
-      const r = this.r * DPR;
-      const grd = ctx.createRadialGradient(-0.4*r, -0.5*r, 0.2*r, 0,0, r);
-      grd.addColorStop(0, '#ff7bd2');
-      grd.addColorStop(1, '#d400ff');
-      ctx.fillStyle = grd;
-      ctx.beginPath();
-      ctx.arc(0,0,r,0,Math.PI*2);
-      ctx.fill();
+ function endGame(){
+   running=false;
+   gameOver=true;
+   if(score > best){
+     best = score;
+     localStorage.setItem('jbr_best', best);
+   }
+   highEl.textContent = best.toFixed(1);
+   overlay.innerHTML = '<div class="card"><h2>Game Over</h2><p>Score: '+score.toFixed(1)+'s<br>High: '+best.toFixed(1)+'s</p><button id="retryBtn">Retry</button><button id="menuBtn" class="secondary">Menu</button></div>';
+   overlay.classList.remove('hidden');
+   document.getElementById('retryBtn').addEventListener('click', function(){ overlay.classList.add('hidden'); startGame(); });
+   document.getElementById('menuBtn').addEventListener('click', function(){ location.reload(); });
+ }
 
-      // face
-      const blink = (Math.sin(this.faceBlinkT*8)+1)/2 < 0.05 ? 0.15 : 1;
-      // eyes
-      const eyeR = r*0.18;
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-r*0.35, -r*0.15, eyeR*blink, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc( r*0.20, -r*0.14, eyeR*blink, 0, Math.PI*2); ctx.fill();
-      // pupils
-      ctx.fillStyle = '#222';
-      ctx.beginPath(); ctx.arc(-r*0.35, -r*0.12, eyeR*0.45*blink, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc( r*0.20, -r*0.11, eyeR*0.45*blink, 0, Math.PI*2); ctx.fill();
-      // mouth (smile)
-      ctx.strokeStyle = '#2b002b';
-      ctx.lineWidth = Math.max(2, r*0.08);
-      ctx.lineCap='round';
-      ctx.beginPath();
-      ctx.arc(-r*0.05, r*0.08, r*0.45, Math.PI*0.08, Math.PI*0.92);
-      ctx.stroke();
+ function jump(){
+   if(!running || paused) return;
+   if(player.onGround){
+     player.vy = jumpVel;
+     player.onGround=false;
+   }
+ }
 
-      // sparkle
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.rotate(-0.3);
-      ctx.fillRect(r*0.1, -r*0.45, r*0.18, r*0.05);
-      ctx.restore();
-    }
-  };
+ document.addEventListener('keydown', function(e){
+   if(['Space','ArrowUp','KeyW'].includes(e.code)){
+     e.preventDefault();
+     jump();
+   }
+ });
 
-  // ----- Obstacles -----
-  const obstacles = [];
-  function spawnObstacle(){
-    const w = (40 + Math.random()*60) * DPR;
-    const h = (30 + Math.random()*100) * DPR;
-    const y = world.groundY()*DPR - h;
-    const x = W() + w + 10*DPR;
-    const mood = Math.random(); // for silly faces
-    obstacles.push({x,y,w,h,face:mood});
-  }
-  function updateObstacles(dt){
-    const v = speed * speedMul * DPR;
-    for (const o of obstacles){ o.x -= v*dt; }
-    // remove off-screen
-    while (obstacles.length && obstacles[0].x + obstacles[0].w < -100) obstacles.shift();
-  }
-  function drawObstacles(){
-    for (const o of obstacles){
-      // body
-      const body = ctx.createLinearGradient(0,o.y,0,o.y+o.h);
-      body.addColorStop(0, '#47e');
-      body.addColorStop(1, '#1b6');
-      ctx.fillStyle = body;
-      ctx.strokeStyle = '#083';
-      ctx.lineWidth = 4*DPR;
-      roundRect(o.x, o.y, o.w, o.h, 14*DPR);
-      ctx.fill(); ctx.stroke();
+ document.addEventListener('pointerdown', function(e){
+   jump();
+ });
 
-      // goofy face on obstacle
-      ctx.save();
-      ctx.translate(o.x + o.w*0.5, o.y + o.h*0.35);
-      ctx.scale(1, 1);
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-o.w*0.18, 0, 8*DPR, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc( o.w*0.18, 0, 8*DPR, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#111';
-      ctx.beginPath(); ctx.arc(-o.w*0.18, 0, 4*DPR, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc( o.w*0.18, 0, 4*DPR, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = '#111'; ctx.lineWidth = 3*DPR;
-      ctx.beginPath();
-      if (o.face<0.33){
-        // big smile
-        ctx.arc(0, o.h*0.10, o.w*0.22, 0, Math.PI);
-      } else if (o.face<0.66){
-        // o_o
-        ctx.moveTo(-o.w*0.1, o.h*0.12); ctx.lineTo(o.w*0.1, o.h*0.12);
-      } else {
-        // derp
-        ctx.moveTo(-o.w*0.08, o.h*0.12); ctx.lineTo(0, o.h*0.2); ctx.lineTo(o.w*0.08, o.h*0.12);
-      }
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-  function roundRect(x,y,w,h,r){
-    const rr = Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+rr,y);
-    ctx.arcTo(x+w,y,x+w,y+h,rr);
-    ctx.arcTo(x+w,y+h,x,y+h,rr);
-    ctx.arcTo(x,y+h,x,y,rr);
-    ctx.arcTo(x,y,x+w,y,rr);
-    ctx.closePath();
-  }
-  function circleRectCollision(cx, cy, r, rx, ry, rw, rh){
-    // clamp to rectangle
-    const nx = Math.max(rx, Math.min(cx, rx+rw));
-    const ny = Math.max(ry, Math.min(cy, ry+rh));
-    const dx = cx - nx, dy = cy - ny;
-    return dx*dx + dy*dy <= r*r;
-  }
+ startBtn.addEventListener('click', function(){
+   startGame();
+ });
 
-  // ----- Parallax scenery -----
-  const parallax = {
-    t1:0, t2:0, t3:0, t4:0,
-    update(dt){
-      const s = speed*speedMul*DPR;
-      this.t1 += s*0.12*dt;
-      this.t2 += s*0.22*dt;
-      this.t3 += s*0.42*dt;
-      this.t4 += s*0.9*dt;
-    },
-    draw(){
-      // sky gradient (already CSS background but add depth)
-      const g = ctx.createLinearGradient(0,0,0,H());
-      g.addColorStop(0, '#8be9ff'); g.addColorStop(0.5, '#ffe8f7'); g.addColorStop(1, '#fff5d6');
-      ctx.fillStyle = g; ctx.fillRect(0,0,W(),H());
-
-      // distant mountains (triangles)
-      drawMountains( this.t1, H()*0.62, H()*0.18, 260*DPR, '#b99cff' );
-      drawMountains( this.t2, H()*0.70, H()*0.22, 220*DPR, '#8ec5ff' );
-
-      // clouds (soft circles)
-      drawCloudBand(this.t1*0.5, H()*0.22, 6, 120*DPR);
-      drawCloudBand(this.t2*0.6, H()*0.32, 7, 90*DPR);
-
-      // candy trees / confetti
-      drawCandyRow(this.t3, H()*0.78, 90*DPR);
-
-      // ground stripes
-      drawGround(this.t4);
-    }
-  };
-  function drawMountains(offset, baseY, peak, spacing, color){
-    ctx.fillStyle = color;
-    const off = offset % spacing;
-    for (let x=-spacing*2; x< W()+spacing*2; x+=spacing){
-      const x0 = x - off;
-      ctx.beginPath();
-      ctx.moveTo(x0, baseY);
-      ctx.lineTo(x0+spacing*0.5, baseY-peak);
-      ctx.lineTo(x0+spacing, baseY);
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
-  function drawCloudBand(offset, y, count, size){
-    const w = W(); const step = w / count;
-    for (let i=0;i<count+2;i++){
-      const x = (i*step - (offset % step));
-      const r = size * (0.6 + (i%3)*0.12);
-      const grd = ctx.createRadialGradient(x-r*0.3,y-r*0.3, r*0.2, x,y, r);
-      grd.addColorStop(0,'#fff'); grd.addColorStop(1,'#ffffffcc');
-      ctx.fillStyle = grd;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI*2);
-      ctx.fill();
-    }
-  }
-  function drawCandyRow(offset, y, spacing){
-    const w = W(); const step = spacing;
-    for (let x=-step*2; x<w+step*2; x+=step){
-      const xx = x - (offset % step);
-      // lollipop stick
-      ctx.strokeStyle = '#b07f5b'; ctx.lineWidth = 6*DPR;
-      ctx.beginPath(); ctx.moveTo(xx, y); ctx.lineTo(xx, y-50*DPR); ctx.stroke();
-      // candy top
-      const grd = ctx.createRadialGradient(xx-10*DPR, y-70*DPR, 6*DPR, xx, y-50*DPR, 30*DPR);
-      const hues = ['#ff5ca3','#ffd166','#06d6a0','#118ab2','#ef476f'];
-      const c = hues[( (x/step)|0) % hues.length];
-      grd.addColorStop(0,'#fff'); grd.addColorStop(1,c);
-      ctx.fillStyle = grd;
-      ctx.beginPath(); ctx.arc(xx, y-50*DPR, 26*DPR, 0, Math.PI*2); ctx.fill();
-    }
-  }
-  function drawGround(offset){
-    const gy = world.groundY()*DPR;
-    // grass
-    ctx.fillStyle = '#5ed46d';
-    ctx.fillRect(0, gy, W(), H()-gy);
-    // track
-    ctx.fillStyle = '#3cba54';
-    ctx.fillRect(0, gy, W(), 16*DPR);
-    // dashes
-    const step = 60*DPR, dashW = 30*DPR, y = gy + 8*DPR;
-    ctx.strokeStyle = '#ffffff80'; ctx.lineWidth = 3*DPR;
-    ctx.beginPath();
-    const off = offset % step;
-    for (let x=-step; x<W()+step; x+=step){
-      const x0 = x - off;
-      ctx.moveTo(x0, y); ctx.lineTo(x0 + dashW, y);
-    }
-    ctx.stroke();
-  }
-
-  // ----- Input -----
-  function onJump(){
-    if (!running){ startGame(); return; }
-    if (gameOver){ restart(); return; }
-    if (paused){ togglePause(false); return; }
-    player.jump();
-  }
-  document.addEventListener('pointerdown', onJump);
-  document.addEventListener('keydown', (e)=>{
-    if (['Space','ArrowUp','KeyW'].includes(e.code)){ e.preventDefault(); onJump(); }
-    if (e.code==='KeyP'){ togglePause(); }
-  });
-  btnStart.addEventListener('click', ()=>{ ensureAudio(); SFX.start(); startGame(); });
-  btnHow  .addEventListener('click', ()=>{
-    alert('Jump over obstacles. The longer you survive, the faster it gets.\n\nTap/Click/Space/W/↑ to jump. P to pause.\n\nFunny sounds reward milestones and laugh at your poor life choices when you face-plant.');
-  });
-  btnPause.addEventListener('click', ()=>togglePause());
-
-  function togglePause(state){
-    if (!running || gameOver) return;
-    paused = (state===undefined) ? !paused : !!state;
-    btnPause.textContent = paused ? '▶ Resume' : '⏸ Pause';
-  }
-
-  // ----- Game control -----
-  function startGame(){
-    overlay.classList.add('hidden');
-    running = true; paused = false; gameOver = false;
-    score = 0; elScore.textContent = '0';
-    speed = world.baseSpeed(); speedMul = 1; milestoneAt = 5; camShakeT = 0;
-    player.reset();
-    obstacles.length = 0; spawnT = 0;
-    tPrev = performance.now();
-    requestAnimationFrame(loop);
-  }
-  function restart(){
-    // quick "Retry" without going back to menu
-    ensureAudio(); SFX.start();
-    gameOver = false; paused = false;
-    score = 0; elScore.textContent = '0';
-    speed = world.baseSpeed(); speedMul = 1; milestoneAt = 5; camShakeT = 0;
-    player.reset();
-    obstacles.length = 0; spawnT = 0;
-  }
-  function endGame(){
-    gameOver = true;
-    camShakeT = 0.25;
-    SFX.hit();
-    // update HS
-    if (score > best){ best = score; localStorage.setItem(HS_KEY, String(best)); elBest.textContent = best; }
-    // show overlay with retry
-    overlay.innerHTML = `
-      <div class="card">
-        <h1>Game Over</h1>
-        <p>You lasted <b>${score.toFixed(1)}</b> seconds at up to <b>${(speedMul).toFixed(2)}x</b> speed. Obstacles are filing a harassment claim.</p>
-        <p>Best: <b>${best.toFixed(1)}</b> seconds</p>
-        <div class="row">
-          <button id="btnRetry">🔁 Retry</button>
-          <button id="btnMenu" class="secondary">🏠 Menu</button>
-        </div>
-        <p class="mini">Tip: you can tap/click anywhere or press Space/W/↑ to jump.</p>
-      </div>`;
-    overlay.classList.remove('hidden');
-    document.getElementById('btnRetry').addEventListener('click', ()=>{ ensureAudio(); overlay.classList.add('hidden'); restart(); });
-    document.getElementById('btnMenu').addEventListener('click', ()=>{
-      overlay.innerHTML = document.getElementById('menuCard').outerHTML;
-      hookMenuButtons();
-    });
-  }
-  function hookMenuButtons(){
-    document.getElementById('btnStart').addEventListener('click', ()=>{ ensureAudio(); SFX.start(); startGame(); });
-    document.getElementById('btnHow').addEventListener('click', ()=>{
-      alert('Jump over obstacles. The longer you survive, the faster it gets.\n\nTap/Click/Space/W/↑ to jump. P to pause.');
-    });
-  }
-
-  // ----- Main Loop -----
-  function loop(ts){
-    if (!running) return;
-    const dt = Math.min(0.035, (ts - tPrev)/1000);
-    tPrev = ts;
-    if (!paused && !gameOver){
-      update(dt);
-      render(dt);
-    }else{
-      render(0); // draw paused frame
-    }
-    requestAnimationFrame(loop);
-  }
-
-  // ----- Update & Render -----
-  function update(dt){
-    // difficulty scaling
-    speedMul += dt * 0.04; // gentle ramp
-    speed = world.baseSpeed() * speedMul;
-    elSpd.textContent = `${speedMul.toFixed(2)}x`;
-
-    parallax.update(dt);
-    player.update(dt);
-
-    // spawns
-    spawnT -= dt;
-    if (spawnT <= 0){
-      spawnObstacle();
-      // next spawn window shrinks with speed
-      const minGap = Math.max(0.55, 1.35 - speedMul*0.25);
-      const maxGap = Math.max(minGap+0.2, 1.8 - speedMul*0.20);
-      spawnT = minGap + Math.random()*(maxGap-minGap);
-    }
-
-    updateObstacles(dt);
-
-    // collisions
-    const cx = player.x*DPR, cy = player.y*DPR, rr = player.r*DPR;
-    for (const o of obstacles){
-      if (circleRectCollision(cx, cy, rr, o.x, o.y, o.w, o.h)){
-        endGame(); return;
-      }
-    }
-
-    // score (seconds survived)
-    score += dt;
-    elScore.textContent = score.toFixed(1);
-
-    // milestones
-    if (score >= milestoneAt){
-      milestoneAt += 5;
-      SFX.milestone();
-      // tiny celebratory shake
-      camShakeT = Math.min(0.15, camShakeT + 0.1);
-    }
-
-    // screen shake timer
-    camShakeT = Math.max(0, camShakeT - dt);
-  }
-
-  function render(){
-    ctx.save();
-    // camera shake
-    if (camShakeT>0){
-      const mag = 8*DPR * (camShakeT/0.15);
-      ctx.translate((Math.random()*2-1)*mag, (Math.random()*2-1)*mag);
-    }
-    parallax.draw();
-
-    // shadows
-    ctx.fillStyle = 'rgba(0,0,0,0.12)';
-    ctx.beginPath();
-    ctx.ellipse(player.x*DPR, (world.groundY()+player.r*0.8)*DPR, player.r*1.1*DPR, player.r*0.35*DPR, 0, 0, Math.PI*2); ctx.fill();
-
-    // entities
-    drawObstacles();
-    player.draw();
-
-    // paused overlay watermark
-    if (paused && !gameOver){
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(0,0,W(),H());
-      banner('PAUSED\nPress P to Resume');
-    }
-    ctx.restore();
-  }
-
-  function banner(text){
-    ctx.save();
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.font = `${Math.floor(36*DPR)}px Impact, system-ui, sans-serif`;
-    ctx.fillStyle = '#fff';
-    const lines = text.split('\n');
-    for (let i=0;i<lines.length;i++){
-      ctx.fillText(lines[i], W()/2, H()/2 + i*44*DPR);
-    }
-    ctx.restore();
-  }
-
-  // Initialize main menu card listeners
-  hookMenuButtons();
-
-  // Friendly: start also on first user gesture anywhere
-  let armed = true;
-  function armStart(){
-    if (!armed) return;
-    armed = false;
-    ensureAudio();
-    SFX.start();
-    startGame();
-  }
-  canvas.addEventListener('touchstart', armStart, {passive:true});
-  canvas.addEventListener('mousedown', armStart);
+ howBtn.addEventListener('click', function(){
+   alert('Tap / Click / Press Space/W/Up arrow to jump.\nAvoid the blocks and survive as long as possible!\nSpeed increases over time.');
+ });
 
 })();
 </script>
